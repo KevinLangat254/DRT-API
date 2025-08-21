@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Digital Receipt Tracker{% endblock %}
+
+{% block content %}
+    <div class="text-center">
+        <h1>Welcome to the Digital Receipt Tracker</h1>
+        <p>Track your expenses, manage budgets, and stay on top of your spending.</p>
+        {% if user.is_authenticated %}
+            <a href="#" class="btn btn-primary">View My Receipts</a>
+        {% else %}
+            <a href="{% url 'login' %}" class="btn btn-success">Login</a>
+            <a href="{% url 'register' %}" class="btn btn-secondary">Register</a>
+        {% endif %}
+    </div>
+{% endblock %}

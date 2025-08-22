@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'DRT',
     'rest_framework',
     'rest_framework.authtoken',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -57,7 +58,7 @@ ROOT_URLCONF = 'receipt_tracker.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / "DRT" / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -139,5 +140,9 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
 }
+
+# settings.py
+LOGIN_REDIRECT_URL = 'index'          # Or your home/dashboard URL
+LOGOUT_REDIRECT_URL = '/login/'   # Optional: redirect after logout
 
 

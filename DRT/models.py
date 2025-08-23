@@ -1,6 +1,9 @@
 from django.db import models
 from django.conf import settings
 from django.db.models import Q, F
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+from decimal import Decimal
 
 # Alias for cleaner code
 User = settings.AUTH_USER_MODEL
@@ -57,6 +60,33 @@ class Receipt(models.Model):
 
     def __str__(self):
         return f"{self.store_name} - {self.total_amount} {self.currency}"
+    
+    def clean(self):
+        """Custom validation for receipt data."""
+        super().clean()
+        
+        # Validate amount is positive
+        if self.total_amount and self.total_amount <= Decimal('0'):
+            raise ValidationError({
+                'total_amount': 'Amount must be greater than zero.'
+            })
+        
+        # Validate purchase date is not in the future
+        if self.purchase_date and self.purchase_date > timezone.now().date():
+            raise ValidationError({
+                'purchase_date': 'Purchase date cannot be in the future.'
+            })
+        
+        # Validate category exists if provided
+        if self.category_id and not Category.objects.filter(id=self.category_id).exists():
+            raise ValidationError({
+                'category': 'Selected category does not exist.'
+            })
+    
+    def save(self, *args, **kwargs):
+        """Ensure validation runs before saving."""
+        self.clean()
+        super().save(*args, **kwargs)
 
 
 class ReceiptItem(models.Model):
@@ -72,6 +102,38 @@ class ReceiptItem(models.Model):
 
     def __str__(self):
         return f"{self.item_name} x{self.quantity}"
+    
+    def clean(self):
+        """Custom validation for item data."""
+        super().clean()
+        
+        # Validate quantities and prices are positive
+        if self.quantity and self.quantity <= 0:
+            raise ValidationError({
+                'quantity': 'Quantity must be greater than zero.'
+            })
+        
+        if self.unit_price and self.unit_price <= Decimal('0'):
+            raise ValidationError({
+                'unit_price': 'Unit price must be greater than zero.'
+            })
+        
+        if self.total_price and self.total_price <= Decimal('0'):
+            raise ValidationError({
+                'total_price': 'Total price must be greater than zero.'
+            })
+        
+        # Validate that total_price matches quantity * unit_price (if both are provided)
+        if (self.quantity and self.unit_price and self.total_price and 
+            self.total_price != self.quantity * self.unit_price):
+            raise ValidationError({
+                'total_price': 'Total price should equal quantity multiplied by unit price.'
+            })
+    
+    def save(self, *args, **kwargs):
+        """Ensure validation runs before saving."""
+        self.clean()
+        super().save(*args, **kwargs)
 
 
 class ReceiptPayment(models.Model):
@@ -96,6 +158,33 @@ class ReceiptPayment(models.Model):
     def __str__(self):
         method = self.payment_method.name if self.payment_method else "Unknown"
         return f"{self.amount_paid} via {method} on {self.paid_at.date()}"
+    
+    def clean(self):
+        """Custom validation for payment data."""
+        super().clean()
+        
+        # Validate amount is positive
+        if self.amount_paid and self.amount_paid <= Decimal('0'):
+            raise ValidationError({
+                'amount_paid': 'Payment amount must be greater than zero.'
+            })
+        
+        # Validate payment method exists if provided
+        if self.payment_method_id and not PaymentMethod.objects.filter(id=self.payment_method_id).exists():
+            raise ValidationError({
+                'payment_method': 'Selected payment method does not exist.'
+            })
+        
+        # Validate payment date is not in the future
+        if self.paid_at and self.paid_at > timezone.now():
+            raise ValidationError({
+                'paid_at': 'Payment date cannot be in the future.'
+            })
+    
+    def save(self, *args, **kwargs):
+        """Ensure validation runs before saving."""
+        self.clean()
+        super().save(*args, **kwargs)
 
 
 class Tag(models.Model):
@@ -152,3 +241,30 @@ class Budget(models.Model):
 
     def __str__(self):
         return f"{self.user} • {self.category.name} • {self.period_start} → {self.period_end}"
+    
+    def clean(self):
+        """Custom validation for budget data."""
+        super().clean()
+        
+        # Validate amount is positive
+        if self.amount_limit and self.amount_limit <= Decimal('0'):
+            raise ValidationError({
+                'amount_limit': 'Budget amount must be greater than zero.'
+            })
+        
+        # Validate dates are not in the past (optional - you might want to allow past budgets)
+        if self.period_start and self.period_start < timezone.now().date():
+            raise ValidationError({
+                'period_start': 'Period start date cannot be in the past.'
+            })
+        
+        # Validate category exists
+        if self.category_id and not Category.objects.filter(id=self.category_id).exists():
+            raise ValidationError({
+                'category': 'Selected category does not exist.'
+            })
+    
+    def save(self, *args, **kwargs):
+        """Ensure validation runs before saving."""
+        self.clean()
+        super().save(*args, **kwargs)

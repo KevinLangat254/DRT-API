@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework.authtoken.views import obtain_auth_token
 from .views import (
     UserViewSet, CategoryViewSet, PaymentMethodViewSet, ReceiptViewSet, TagViewSet,
-    ReceiptTagViewSet, BudgetViewSet, ReceiptPaymentViewSet, ReceiptItemViewSet
+    ReceiptTagViewSet, BudgetViewSet, ReceiptPaymentViewSet, ReceiptItemViewSet, RegisterAPIView, LogoutAPIView
 )
 
 # Create API router
@@ -24,10 +24,9 @@ api_router.register(r'receipt-items', ReceiptItemViewSet, basename='receipt-item
 urlpatterns = [
     # Authentication endpoints
     path('auth/token/', obtain_auth_token, name='api_token_auth'),
+    path('auth/register/', RegisterAPIView.as_view(), name='api_register'),
+    path('auth/logout/', LogoutAPIView.as_view(), name='api_logout'),
     
     # API router endpoints
     path('', include(api_router.urls)),
-    
-    # Additional API endpoints can be added here
-    # path('analytics/', include('DRT.analytics_urls')),
 ]

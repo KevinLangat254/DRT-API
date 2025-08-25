@@ -3,7 +3,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Q, Sum, Count
+from django.db.models import Q, Sum, Count, Prefetch
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from datetime import timedelta
@@ -13,7 +13,7 @@ from .models import (
 )
 from .serializers import (
     CategorySerializer, PaymentMethodSerializer, ReceiptSerializer, TagSerializer,
-    ReceiptTagSerializer, BudgetSerializer, ReceiptPaymentSerializer, ReceiptItemSerializer
+    ReceiptTagSerializer, BudgetSerializer, ReceiptPaymentSerializer, ReceiptItemSerializer, UserSerializer, RegistrationSerializer
 )
 from django.contrib.auth.views import LoginView, LogoutView
 from .forms import LoginForm, RegistrationForm
@@ -23,6 +23,9 @@ from django.conf import settings
 from django.shortcuts import render
 from django.contrib.auth import get_user_model
 from django.contrib.auth import login
+from rest_framework.views import APIView
+from rest_framework.authtoken.models import Token
+from rest_framework.generics import GenericAPIView
 
 User = get_user_model()
 
@@ -31,34 +34,63 @@ User = get_user_model()
 
 class UserViewSet(viewsets.ModelViewSet):
     """ViewSet for user management. Users can only access their own profile."""
-    serializer_class = None  # We'll create a simple serializer for user data
+    serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         """Users can only see their own profile."""
         return User.objects.filter(id=self.request.user.id)
-    
+
+    def get_object(self):
+        return self.request.user
+
+    def list(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_queryset(), many=True)
+        return Response(serializer.data)
+
     @action(detail=False, methods=['get'])
     def profile(self, request):
         """Get current user's profile information."""
-        user = request.user
-        return Response({
-            'id': user.id,
-            'username': user.username,
-            'email': user.email,
-            'date_joined': user.date_joined,
-            'is_active': user.is_active,
-        })
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
     
     @action(detail=False, methods=['put', 'patch'])
     def update_profile(self, request):
         """Update current user's profile."""
+        serializer = self.get_serializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'])
+    def deactivate(self, request):
+        """Soft-delete the current user: set is_active=False and revoke tokens."""
         user = request.user
-        serializer = self.get_serializer(user, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if not user.is_active:
+            return Response({'detail': 'Account already inactive.'}, status=status.HTTP_200_OK)
+        user.is_active = False
+        user.save(update_fields=['is_active'])
+        # Revoke all tokens for this user
+        Token.objects.filter(user=user).delete()
+        return Response({'detail': 'Account deactivated.'}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def reactivate(self, request):
+        """Admin-only: reactivate a user by id or username (sets is_active=True)."""
+        user_id = request.data.get('user_id')
+        username = request.data.get('username')
+        target = None
+        if user_id:
+            target = User.objects.filter(id=user_id).first()
+        if not target and username:
+            target = User.objects.filter(username=username).first()
+        if not target:
+            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if target.is_active:
+            return Response({'detail': 'Account already active.'}, status=status.HTTP_200_OK)
+        target.is_active = True
+        target.save(update_fields=['is_active'])
+        return Response({'detail': 'Account reactivated.'}, status=status.HTTP_200_OK)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -98,7 +130,7 @@ class ReceiptViewSet(viewsets.ModelViewSet):
         ).prefetch_related(
             'payments__payment_method',
             'items',
-            'tags__tag'
+            Prefetch('receipttag_set', queryset=ReceiptTag.objects.select_related('tag'))
         )
         
         # Custom filtering for payment method and tags
@@ -114,7 +146,7 @@ class ReceiptViewSet(viewsets.ModelViewSet):
         
         if tags:
             tag_list = [tag.strip() for tag in tags.split(',')]
-            queryset = queryset.filter(tags__tag__name__in=tag_list)
+            queryset = queryset.filter(receipttag__tag__name__in=tag_list)
         
         if date_from:
             queryset = queryset.filter(purchase_date__gte=date_from)
@@ -397,3 +429,26 @@ class RegisterView(CreateView):
 def HomeView(request):
     
     return render(request, "index.html")  # Ensure you have a home.html template    
+
+class RegisterAPIView(GenericAPIView):
+    serializer_class = RegistrationSerializer
+    permission_classes = []
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response({
+            'token': token.key,
+            'user': UserSerializer(user).data
+        }, status=status.HTTP_201_CREATED)
+
+
+class LogoutAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        # Delete all tokens for this user (or you can choose to delete only the current one)
+        Token.objects.filter(user=request.user).delete()
+        return Response({'detail': 'Logged out'}, status=status.HTTP_200_OK)

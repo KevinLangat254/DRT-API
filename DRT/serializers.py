@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from decimal import Decimal
+from django.contrib.auth import get_user_model
 from .models import (
     Category,
     PaymentMethod,
@@ -12,6 +13,38 @@ from .models import (
     ReceiptPayment,
     ReceiptItem
 )
+
+User = get_user_model()
+
+
+class RegistrationSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    password = serializers.CharField(write_only=True, min_length=8)
+
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Username already taken.")
+        return value
+
+    def validate_email(self, value):
+        if value and User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email already in use.")
+        return value
+
+    def create(self, validated_data):
+        return User.objects.create_user(
+            username=validated_data.get('username'),
+            email=validated_data.get('email', ''),
+            password=validated_data.get('password')
+        )
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'date_joined', 'is_active']
+        read_only_fields = ['id', 'date_joined', 'is_active', 'username']
 
 
 class CategorySerializer(serializers.ModelSerializer):

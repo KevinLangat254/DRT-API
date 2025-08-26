@@ -1,12 +1,14 @@
 from django.urls import path
 from .views import (
-    CustomLoginView, CustomLogoutView, RegisterView, HomeView
+    CustomLoginView, RegisterView, HomeView, web_logout,
 )
+from .views.web import dashboard  
 
 urlpatterns = [
     # Web interface endpoints
     path('', HomeView, name='index'),
     path('login/', CustomLoginView.as_view(), name='login'),
-    path('logout/', CustomLogoutView.as_view(), name='logout'),
+    path('logout/', web_logout, name='logout'),
     path('register/', RegisterView.as_view(), name='register'),
+    path('dashboard/', dashboard, name='dashboard'),  # New dashboard view
 ]

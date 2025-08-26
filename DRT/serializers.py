@@ -130,7 +130,13 @@ class ReceiptSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Receipt
-        fields = "__all__"
+        
+        fields = [
+            "id", "store_name", "total_amount", "currency", 
+            "purchase_date", "uploaded_at", "notes", "category", 
+            "category_name", "user_username", "items", "payments"
+        ]
+        read_only_fields = ["uploaded_at", "user_username", "category_name", "items", "payments"]
     
     def validate_total_amount(self, value):
         """Validate receipt amount is positive."""

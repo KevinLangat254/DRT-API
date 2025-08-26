@@ -148,8 +148,9 @@ REST_FRAMEWORK = {
     ],
 }
 
-# settings.py
-LOGIN_REDIRECT_URL = 'index'          # Or your home/dashboard URL
-LOGOUT_REDIRECT_URL = '/login/'   # Optional: redirect after logout
+
+LOGIN_REDIRECT_URL = 'index'          
+LOGIN_URL = '/drt/login/'
+LOGOUT_REDIRECT_URL = '/drt/login/'   
 
 

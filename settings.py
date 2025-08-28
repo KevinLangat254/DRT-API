@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 
+import os
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,12 +22,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-!)&phpzva75+za35)squwq7+*wva^@8ya475c7q&#@9fh6bu#r'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
 
-ALLOWED_HOSTS = []
+
+DEBUG = os.getenv("DEBUG", "False").lower() in ("1", "true", "yes")
+
+ALLOWED_HOSTS = ['Kevinpy.pythonanywhere.com']
+
+CSRF_TRUSTED_ORIGINS = ['https://Kevinpy.pythonanywhere.com']
 
 
 # Application definition
@@ -41,6 +46,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_filters',
+
 ]
 
 MIDDLEWARE = [

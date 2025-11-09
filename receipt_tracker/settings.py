@@ -13,11 +13,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 
 import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env
-BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,11 +26,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
 
 
-# DEBUG = os.getenv("DEBUG", "False").lower() in ("1", "true", "yes")
-DEBUG = True
-ALLOWED_HOSTS = ['Kevinpy.pythonanywhere.com',"127.0.0.1", "localhost"]
+DEBUG = os.getenv("DEBUG", "False").lower() in ("1", "true", "yes")
 
-CSRF_TRUSTED_ORIGINS = ['https://Kevinpy.pythonanywhere.com']
+ALLOWED_HOSTS = ['Kevinpy.pythonanywhere.com', '127.0.0.1', 'localhost']
+
+CSRF_TRUSTED_ORIGINS = ['https://Kevinpy.pythonanywhere.com', 'http://127.0.0.1:8000', 'http://127.0.0.1:8001', 'http://localhost:8000', 'http://localhost:8001']
 
 
 # Application definition
@@ -88,18 +83,14 @@ WSGI_APPLICATION = 'receipt_tracker.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.environ.get("DB_NAME"),
-        "USER": os.environ.get("DB_USER"),
-        "PASSWORD": os.environ.get("DB_PASSWORD"),
-        "HOST": os.environ.get("DB_HOST"),
-        "PORT": int(os.environ.get("DB_PORT", 3306)),
-        "OPTIONS": {
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'"
-        },
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+
+
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 

@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework.authtoken.views import obtain_auth_token
 from .views import (
     UserViewSet, ReceiptViewSet,
-     RegisterAPIView, LogoutAPIView,
+     RegisterAPIView, LogoutAPIView, LoginAPIView
     
 )
 from .views import resources
@@ -30,6 +30,7 @@ urlpatterns = [
     path('auth/token/', obtain_auth_token, name='api_token_auth'),
     path('auth/register/', RegisterAPIView.as_view(), name='api_register'),
     path('auth/logout/', LogoutAPIView.as_view(), name='api_logout'),
+    path('auth/login/', LoginAPIView.as_view(), name='login'),
     
     # API router endpoints
     path('', include(api_router.urls)),

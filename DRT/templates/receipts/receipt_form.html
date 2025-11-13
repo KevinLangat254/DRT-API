@@ -86,7 +86,7 @@
                         </div>
 
                         <div class="d-flex justify-content-between">
-                            <a href="{% if object %}{% url 'receipt_detail' object.pk %}{% else %}{% url 'dashboard' %}{% endif %}" 
+                            <a href="{% if object %}{% url 'receipt_detail' object.pk %}{% else %}{% url 'receipts' %}{% endif %}" 
                                class="btn btn-secondary">Cancel</a>
                             <button type="submit" class="btn btn-primary">
                                 {% if object %}Update Receipt{% else %}Create Receipt{% endif %}

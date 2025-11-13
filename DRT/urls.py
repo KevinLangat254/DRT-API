@@ -1,7 +1,18 @@
 from django.urls import path
 from .views import (
-    CustomLoginView, RegisterView, HomeView, web_logout, dashboard,
-    ReceiptCreateView, ReceiptDetailView, ReceiptUpdateView, ReceiptDeleteView
+    CustomLoginView,
+    RegisterView,
+    HomeView,
+    web_logout,
+    receipts,
+    ReceiptCreateView,
+    ReceiptDetailView,
+    ReceiptUpdateView,
+    ReceiptDeleteView,
+    BudgetListView,
+    BudgetCreateView,
+    BudgetUpdateView,
+    BudgetDeleteView,
 )
 
 urlpatterns = [
@@ -10,11 +21,17 @@ urlpatterns = [
     path('login/', CustomLoginView.as_view(), name='login'),
     path('logout/', web_logout, name='logout'),
     path('register/', RegisterView.as_view(), name='register'),
-    path('dashboard/', dashboard, name='dashboard'),
+    path('receipts/', receipts, name='receipts'),
     
     # Receipt management
     path('receipts/create/', ReceiptCreateView.as_view(), name='receipt_create'),
     path('receipts/<int:pk>/', ReceiptDetailView.as_view(), name='receipt_detail'),
     path('receipts/<int:pk>/edit/', ReceiptUpdateView.as_view(), name='receipt_update'),
     path('receipts/<int:pk>/delete/', ReceiptDeleteView.as_view(), name='receipt_delete'),
+
+    # Budget management
+    path('budgets/', BudgetListView.as_view(), name='budget_list'),
+    path('budgets/create/', BudgetCreateView.as_view(), name='budget_create'),
+    path('budgets/<int:pk>/edit/', BudgetUpdateView.as_view(), name='budget_update'),
+    path('budgets/<int:pk>/delete/', BudgetDeleteView.as_view(), name='budget_delete'),
 ]

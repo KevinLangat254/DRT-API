@@ -27,8 +27,12 @@
 
             {% if user.is_authenticated %}
               <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
-                   href="{% url 'dashboard' %}">Dashboard</a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'receipts' %}active{% endif %}" 
+                   href="{% url 'receipts' %}">Receipts</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name|default:''|slice:':6' == 'budget' %}active{% endif %}"
+                   href="{% url 'budget_list' %}">Budgets</a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="{% url 'logout' %}">Logout</a>
@@ -60,7 +64,7 @@
 
           <!-- Search bar (only for authenticated users) -->
           {% if user.is_authenticated %}
-          <form class="d-flex ms-3" role="search" method="get" action="{% url 'dashboard' %}">
+          <form class="d-flex ms-3" role="search" method="get" action="{% url 'receipts' %}">
             <input class="form-control me-2" 
                    type="search" 
                    name="q" 

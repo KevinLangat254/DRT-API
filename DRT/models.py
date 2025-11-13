@@ -242,6 +242,10 @@ class Budget(models.Model):
     def __str__(self):
         return f"{self.user} • {self.category.name} • {self.period_start} → {self.period_end}"
     
+    def is_expired(self):
+        """Check if the budget period has ended."""
+        return self.period_end < timezone.now().date()
+    
     def clean(self):
         """Custom validation for budget data."""
         super().clean()

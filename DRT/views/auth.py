@@ -53,18 +53,7 @@ class LoginAPIView(GenericAPIView):
             status=status.HTTP_200_OK
         )    
 
-class LoginAPIView(GenericAPIView):
-    serializer_class = UserSerializer
-    permission_classes = []
 
-    def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        user = User.objects.filter(username=username).first()
-        if user and user.check_password(password):
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key, 'user': UserSerializer(user).data}, status=status.HTTP_200_OK)
-        return Response({'detail': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
 
 class LogoutAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]

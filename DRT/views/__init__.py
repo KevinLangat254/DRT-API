@@ -14,6 +14,9 @@ from .web import (
     BudgetCreateView,
     BudgetUpdateView,
     BudgetDeleteView,
+    NotificationListView,
+    MarkAllNotificationsRead,
+    MarkNotificationRead,
 )
 
 

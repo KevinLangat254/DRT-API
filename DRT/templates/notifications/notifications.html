@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8"> <!-- Centered column, easier to read than full width -->
+
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold mb-0">Notifications</h2>
+                    <p class="text-muted small">Stay updated on your spending and budgets.</p>
+                </div>
+                {% if notifications %}
+                <a href="{% url 'mark_all_read' %}" class="btn btn-light btn-sm border shadow-sm text-muted">
+                    <i class="bi bi-check-all me-1"></i> Mark all read
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Notification Feed -->
+            <div class="list-group shadow-sm rounded-3 overflow-hidden">
+                {% for n in notifications %}
+                <a href="{% url 'mark_notification_read' n.pk %}" 
+                   class="list-group-item list-group-item-action p-4 border-0 border-bottom 
+                          d-flex align-items-start gap-3
+                          {% if not n.is_read %}bg-blue-50 border-start-primary{% else %}bg-white opacity-75{% endif %}"
+                   style="{% if not n.is_read %}border-left: 4px solid #0d6efd; background-color: #f8f9fa;{% endif %}">
+
+                    <!-- Icon Logic based on message content -->
+                    <div class="flex-shrink-0">
+                        {% if "Budget" in n.message %}
+                            <span class="d-inline-flex align-items-center justify-content-center bg-warning bg-opacity-10 text-warning rounded-circle" style="width: 48px; height: 48px;">
+                                <i class="bi bi-pie-chart-fill fs-5"></i>
+                            </span>
+                        {% elif "Receipt" in n.message %}
+                            <span class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-circle" style="width: 48px; height: 48px;">
+                                <i class="bi bi-receipt fs-5"></i>
+                            </span>
+                        {% else %}
+                            <span class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle" style="width: 48px; height: 48px;">
+                                <i class="bi bi-info-circle-fill fs-5"></i>
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Content -->
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h6 class="mb-0 {% if not n.is_read %}fw-bold text-dark{% else %}text-muted{% endif %}">
+                                {% if "Budget" in n.message %}
+                                    Budget Update
+                                {% elif "Receipt" in n.message %}
+                                    Receipt Activity
+                                {% else %}
+                                    System Alert
+                                {% endif %}
+                            </h6>
+                            <small class="text-nowrap ms-2 {% if not n.is_read %}text-primary fw-bold{% else %}text-muted{% endif %}" style="font-size: 0.75rem;">
+                                {{ n.created_at|timesince }} ago
+                            </small>
+                        </div>
+                        <p class="mb-0 text-secondary small" style="line-height: 1.5;">
+                            {{ n.message }}
+                        </p>
+                    </div>
+
+                    <!-- Unread Dot Indicator -->
+                    {% if not n.is_read %}
+                    <div class="flex-shrink-0 align-self-center ms-2">
+                        <span class="badge bg-primary rounded-pill p-1" style="font-size: 0.5rem;">&nbsp;</span>
+                    </div>
+                    {% endif %}
+                </a>
+                {% empty %}
+                <!-- Empty State -->
+                <div class="text-center py-5 bg-white">
+                    <div class="mb-3">
+                        <i class="bi bi-bell-slash text-secondary opacity-25" style="font-size: 4rem;"></i>
+                    </div>
+                    <h5 class="text-muted">No new notifications</h5>
+                    <p class="text-secondary small">We'll let you know when something happens.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Optional: Add hover effect specifically for this list */
+    .list-group-item-action:hover {
+        background-color: #f1f3f5 !important;
+        transform: translateY(-1px);
+        transition: all 0.2s;
+    }
+    /* Ensure the custom blue background for unread works */
+    .bg-blue-50 {
+        background-color: #f0f7ff !important;
+    }
+</style>
+{% endblock %}

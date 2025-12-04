@@ -10,11 +10,13 @@ from django.db.models import Q
 from decimal import Decimal, InvalidOperation
 from django.utils import timezone
 
+# Assuming your forms and models are in the parent directory as per your imports
 from ..forms import LoginForm, RegistrationForm, ReceiptForm, BudgetForm
-from ..models import Receipt, Budget
+from ..models import Receipt, Budget, Notification
 
 User = get_user_model()
 
+# --- AUTHENTICATION VIEWS ---
 
 class CustomLoginView(LoginView):
     template_name = "auth/login.html"
@@ -32,11 +34,20 @@ class RegisterView(CreateView):
     def form_valid(self, form):
         response = super().form_valid(form)
         login(self.request, self.object)
+        
+        # Optional: Welcome Notification
+        Notification.objects.create(
+            user=self.object,
+            message="Welcome to Receipt Tracker! Start by adding your first receipt."
+        )
         return response
 
 
 def HomeView(request):
     return render(request, "index.html")
+
+
+# --- RECEIPT VIEWS ---
 
 @login_required
 def receipts(request):
@@ -108,8 +119,19 @@ class ReceiptCreateView(LoginRequiredMixin, CreateView):
     
     def form_valid(self, form):
         form.instance.user = self.request.user
+        
+        # Save the receipt first to get the ID/Object
+        response = super().form_valid(form)
+        
         messages.success(self.request, 'Receipt created successfully!')
-        return super().form_valid(form)
+
+        # Create Notification
+        Notification.objects.create(
+            user=self.request.user,
+            message=f"Receipt from '{self.object.store_name}' for Ksh {self.object.total_amount} was added."
+        )
+
+        return response
     
     def get_success_url(self):
         return reverse_lazy('receipt_detail', kwargs={'pk': self.object.pk})
@@ -140,8 +162,18 @@ class ReceiptUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return receipt.user == self.request.user
     
     def form_valid(self, form):
+        # Save the changes
+        response = super().form_valid(form)
+        
         messages.success(self.request, 'Receipt updated successfully!')
-        return super().form_valid(form)
+        
+        # Create Notification
+        Notification.objects.create(
+            user=self.request.user,
+            message=f"Receipt from '{self.object.store_name}' was updated."
+        )
+        
+        return response
     
     def get_success_url(self):
         return reverse_lazy('receipt_detail', kwargs={'pk': self.object.pk})
@@ -158,9 +190,26 @@ class ReceiptDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         return receipt.user == self.request.user
     
     def delete(self, request, *args, **kwargs):
+        # 1. Capture details BEFORE deleting
+        receipt = self.get_object()
+        store_name = receipt.store_name
+        amount = receipt.total_amount
+        
+        # 2. Perform the delete
+        response = super().delete(request, *args, **kwargs)
+        
         messages.success(self.request, 'Receipt deleted successfully!')
-        return super().delete(request, *args, **kwargs)
+        
+        # 3. Create Notification
+        Notification.objects.create(
+            user=self.request.user,
+            message=f"Receipt from '{store_name}' (Ksh {amount}) was deleted."
+        )
+        
+        return response
 
+
+# --- BUDGET VIEWS ---
 
 class BudgetListView(LoginRequiredMixin, ListView):
     """List budgets for the logged-in user."""
@@ -195,8 +244,19 @@ class BudgetCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.user = self.request.user
+        
+        # Save budget
+        response = super().form_valid(form)
+        
         messages.success(self.request, "Budget created successfully!")
-        return super().form_valid(form)
+        
+        # Create Notification
+        Notification.objects.create(
+            user=self.request.user,
+            message=f"Budget for '{self.object.category.name}' (Ksh {self.object.amount}) created."
+        )
+        
+        return response
 
 
 class BudgetUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
@@ -212,8 +272,18 @@ class BudgetUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return budget.user == self.request.user
 
     def form_valid(self, form):
+        # Save changes
+        response = super().form_valid(form)
+        
         messages.success(self.request, "Budget updated successfully!")
-        return super().form_valid(form)
+        
+        # Create Notification
+        Notification.objects.create(
+            user=self.request.user,
+            message=f"Budget for '{self.object.category.name}' updated to Ksh {self.object.amount}."
+        )
+        
+        return response
 
 
 class BudgetDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
@@ -228,6 +298,55 @@ class BudgetDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         return budget.user == self.request.user
 
     def delete(self, request, *args, **kwargs):
+        # 1. Capture details BEFORE deleting
+        budget = self.get_object()
+        category_name = budget.category.name
+        amount = budget.amount
+
+        # 2. Perform delete
+        response = super().delete(request, *args, **kwargs)
+        
         messages.success(self.request, "Budget deleted successfully!")
-        return super().delete(request, *args, **kwargs)
+        
+        # 3. Create Notification
+        Notification.objects.create(
+            user=self.request.user,
+            message=f"Budget for '{category_name}' (Ksh {amount}) was deleted."
+        )
+        
+        return response
+    
+class NotificationListView(LoginRequiredMixin, ListView):
+    """List notifications for the logged-in user."""
+
+    model = Notification
+    template_name = "notifications/notifications.html"
+    context_object_name = "notifications"
+
+    def get_queryset(self):
+        return (
+            Notification.objects.filter(user=self.request.user)
+            .order_by("-created_at")
+        )
+    
+@login_required   
+def MarkAllNotificationsRead(request):
+    """Mark all notifications as read for the logged-in user."""
+    if request.user.is_authenticated:
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        messages.success(request, "All notifications marked as read.")
+    return render(request, "notifications/notifications.html")  
+
+@login_required   
+def MarkNotificationRead(request, pk):
+    """Mark a single notification as read."""
+    if request.user.is_authenticated:
+        try:
+            notification = Notification.objects.get(pk=pk, user=request.user)
+            notification.is_read = True
+            notification.save()
+            messages.success(request, "Notification marked as read.")
+        except Notification.DoesNotExist:
+            messages.error(request, "Notification not found.")
+    return render(request, "notifications/notifications.html")  
 

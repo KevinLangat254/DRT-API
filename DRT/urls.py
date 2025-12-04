@@ -13,6 +13,9 @@ from .views import (
     BudgetCreateView,
     BudgetUpdateView,
     BudgetDeleteView,
+    NotificationListView,
+    MarkAllNotificationsRead as MarkAll,
+    MarkNotificationRead as MarkRead,
 )
 
 urlpatterns = [
@@ -34,4 +37,9 @@ urlpatterns = [
     path('budgets/create/', BudgetCreateView.as_view(), name='budget_create'),
     path('budgets/<int:pk>/edit/', BudgetUpdateView.as_view(), name='budget_update'),
     path('budgets/<int:pk>/delete/', BudgetDeleteView.as_view(), name='budget_delete'),
+
+    # Notifications
+    path('notifications/', NotificationListView.as_view(), name='notifications'),
+    path('notifications/<int:pk>/read/', MarkRead, name='mark_notification_read'),
+    path('notifications/read_all/', MarkAll, name='mark_all_read'),
 ]

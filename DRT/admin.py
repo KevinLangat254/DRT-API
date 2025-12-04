@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.utils.html import format_html
-from .models import Category, PaymentMethod, Receipt, Tag, ReceiptTag, Budget, ReceiptPayment, ReceiptItem
+from .models import Category, PaymentMethod, Receipt, Tag, ReceiptTag, Budget, ReceiptPayment, ReceiptItem, Notification
 
 
 @admin.register(Category)
@@ -117,3 +117,12 @@ class BudgetAdmin(admin.ModelAdmin):
             self.message_user(request, f"Validation error: {e}", level='ERROR')
             raise
 
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ['user', 'message', 'is_read', 'created_at']
+    list_filter = ['is_read', 'created_at', 'user']
+    search_fields = ['message', 'user__username']
+    ordering = ['-created_at']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')

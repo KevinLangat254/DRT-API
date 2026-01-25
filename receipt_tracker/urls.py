@@ -22,7 +22,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('DRT.api_urls')),  # API endpoints
-    path('drt/', include('DRT.urls')),  # Web interface (login, register, home)
+    path('', include('DRT.urls')),  # Web interface (login, register, home)
 ]
 
 # Serve static files during development
